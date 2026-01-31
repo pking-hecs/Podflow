@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - BACKEND_URL=http://backend:3000
+    networks:
+      - frontend
+      - backend
+    restart: always
+
+  backend:
+    build: ./services/backend
+    container_name: backend
+    networks:
+      - backend
+    restart: always
+
+networks:
+  frontend:
+  backend:

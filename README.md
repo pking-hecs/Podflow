@@ -21,3 +21,12 @@ auto-healing, auto-scaling, and security using a honeypot.
 
 ## Status
 🚧 Under active development
+
+## Architecture
+
+- API Gateway is the single public entry point (port 8080)
+- Backend service is isolated and not exposed to host
+- All traffic flows through the gateway
+- Auto-healing restarts backend on failure
+- Auto-scaling adjusts replicas based on CPU load
+- podman-compose manages service lifecycle
