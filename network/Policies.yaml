@@ -1,0 +1,74 @@
+# PodFlow baseline connectivity rules
+# Scope:
+# - api-gateway (frontend tier)
+# - user-service (backend tier)
+#
+# Future extensions:
+# - monitoring access (Prometheus)
+# - honeypot isolation
+# - cluster-wide default deny
+
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: gateway-access
+  namespace: podflow
+spec:
+  selector: podflow.tier == 'frontend'
+  types:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Public entry point for the API gateway
+    - action: Allow
+      protocol: TCP
+      destination:
+        ports:
+          - 8080
+
+  egress:
+    # Allow calls from gateway to backend tier
+    - action: Allow
+      protocol: TCP
+      destination:
+        selector: podflow.tier == 'backend'
+
+    # Required for service discovery
+    - action: Allow
+      protocol: UDP
+      destination:
+        ports:
+          - 53
+
+---
+
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: backend-restricted-access
+  namespace: podflow
+spec:
+  selector: podflow.tier == 'backend'
+  types:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Only gateway tier can reach backend services
+    - action: Allow
+      protocol: TCP
+      source:
+        selector: podflow.tier == 'frontend'
+
+  egress:
+    # DNS access for backend pods
+    - action: Allow
+      protocol: UDP
+      destination:
+        ports:
+          - 53
+
+    # Default deny for backend egress
+    # (extend above this rule when new components are introduced)
+    - action: Deny
