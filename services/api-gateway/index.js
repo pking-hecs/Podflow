@@ -4,26 +4,26 @@ const httpProxy = require('http-proxy');
 const app = express();
 const proxy = httpProxy.createProxyServer();
 
-// Backend service name (will work with replicas later)
-const BACKEND_URL = process.env.BACKEND_URL || 'http://node-app:3000';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://user-service:3000';
 
-app.use(express.json());
-
-// Health endpoint
+// Health check
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'API Gateway running' });
+  res.json({ status: 'API Gateway running' });
 });
 
-// Proxy API requests
+// 🔥 THIS ROUTE WAS MISSING / NOT WORKING BEFORE
 app.all('/api/*', (req, res) => {
+  console.log('Gateway received:', req.method, req.url);
+
+  // remove /api before forwarding
+  req.url = req.url.replace('/api', '');
+
   proxy.web(req, res, { target: BACKEND_URL }, (err) => {
-    console.error('[GATEWAY ERROR]', err.message);
+    console.error('Proxy error:', err.message);
     res.status(502).json({ error: 'Backend service unavailable' });
   });
 });
 
-// Start server
-const PORT = 8080;
-app.listen(PORT, () => {
-  console.log(`API Gateway listening on port ${PORT}`);
+app.listen(8080, () => {
+  console.log('API Gateway listening on port 8080');
 });
