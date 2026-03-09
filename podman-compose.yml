@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - BACKEND_URL=http://user-service:3000
+      - USER_SERVICE_URL=http://user-service:3000
     networks:
       - public_net
       - service_net

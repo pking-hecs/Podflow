@@ -1,14 +1,15 @@
-const client = require('prom-client');
+const client = require("prom-client");
 
+// collect default node metrics
 client.collectDefaultMetrics();
 
-const httpRequestCounter = new client.Counter({
-  name: 'gateway_http_requests_total',
-  help: 'Total HTTP requests received by API Gateway',
-  labelNames: ['method', 'route', 'status']
+const gatewayRequestsTotal = new client.Counter({
+  name: "gateway_requests_total",
+  help: "Total number of requests handled by API Gateway",
+  labelNames: ["method", "route", "status"]
 });
 
 module.exports = {
   client,
-  httpRequestCounter
+  gatewayRequestsTotal
 };
