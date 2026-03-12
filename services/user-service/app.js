@@ -1,6 +1,11 @@
 const express = require("express");
 const client = require("prom-client");
 
+client.collectDefaultMetrics();
+
+const register = client.register;
+
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -50,8 +55,8 @@ app.get("/users", (req, res) => {
 /* ---------------- METRICS ENDPOINT ---------------- */
 
 app.get("/metrics", async (req, res) => {
-  res.set("Content-Type", client.register.contentType);
-  res.end(await client.register.metrics());
+  res.set("Content-Type", register.contentType);
+  res.end(await register.metrics());
 });
 
 /* ---------------- START SERVER ---------------- */

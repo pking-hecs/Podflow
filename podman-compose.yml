@@ -34,6 +34,13 @@ services:
     networks:
       - service_net
 
+grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - service_net
+
 
 networks:
   public_net:
