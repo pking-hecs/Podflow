@@ -1,14 +1,14 @@
 # ===============================================================
-# QUICK SUMMARY:
-# 1. Gateway (Port 8080): Open to outside; can only talk to Backend.
-# 2. Backend (Port 5000): Private; only accepts traffic from Gateway.
-# 3. Honeypot (2222/8888): Isolated trap; open to all for detection.
-# 4. Global Deny: All other traffic is blocked by default.
+# QUICK SUMMARY OF CONNECTIVITY:
+# 1. GATEWAY: Public access (8080) -> Can talk to Backend.
+# 2. BACKEND: Private access (5000) -> Only Gateway & Prometheus allowed.
+# 3. HONEYPOT: Trap access (2222/8888) -> Open to all & Prometheus.
+# 4. MONITORING: Prometheus is allowed to scrape all tiers.
 # ===============================================================
 
 # ===============================================================
-# PODFLOW NETWORK SECURITY ARCHITECTURE
-# Purpose: Zero-Trust segmentation for Gateway, Backend, and Traps
+# PODFLOW SECURITY ARCHITECTURE 
+# Purpose: Zero-Trust segmentation with Monitoring Integration
 # ===============================================================
 
 apiVersion: projectcalico.org/v3
@@ -22,27 +22,31 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # COMPLETED: Exposed Port 8080 for external API traffic
+    # COMPLETED: External traffic allowed on Port 8080
     - action: Allow
       protocol: TCP
       destination:
         ports:
           - 8080
+    # COMPLETED: Allow Prometheus to scrape Gateway metrics
+    - action: Allow
+      protocol: TCP
+      source:
+        selector: app == 'prometheus'
   egress:
-    # COMPLETED: Secured link to Backend on Port 5000 (matches current app.js)
+    # COMPLETED: Connect to Backend tier on Port 5000
     - action: Allow
       protocol: TCP
       destination:
         selector: podflow.tier == 'backend'
         ports:
           - 5000
-    # COMPLETED: Enabled UDP/53 for internal K8s service discovery
+    # COMPLETED: DNS resolution enabled
     - action: Allow
       protocol: UDP
       destination:
         ports:
           - 53
-    # TODO: Add egress rule for external OAuth/Auth providers if required later
 
 ---
 
@@ -57,7 +61,7 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # COMPLETED: Restricted access to only allow the Frontend tier
+    # COMPLETED: Only the Gateway tier can reach the Backend API
     - action: Allow
       protocol: TCP
       source:
@@ -65,9 +69,16 @@ spec:
       destination:
         ports:
           - 5000
-    # TODO: Add Ingress rule for Prometheus scraping (Port 5000) once monitoring is deployed
+    # COMPLETED: Allow Prometheus to scrape metrics on Port 5000
+    - action: Allow
+      protocol: TCP
+      source:
+        selector: app == 'prometheus'
+      destination:
+        ports:
+          - 5000
   egress:
-    # COMPLETED: Locked down backend; only DNS is permitted
+    # COMPLETED: Isolated egress; only DNS is permitted
     - action: Allow
       protocol: UDP
       destination:
@@ -88,23 +99,29 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # COMPLETED: Mapped traps for Port 2222 (SSH) and Port 8888 (HTTP Admin)
-    # This allows the honeypot.py script to log all unauthorized attempts
+    # COMPLETED: Open trap ports 2222 (SSH) and 8888 (HTTP)
     - action: Allow
       protocol: TCP
       destination:
         ports:
           - 2222
           - 8888
+    # COMPLETED: Allow Prometheus to pull attack metrics from Port 8888
+    - action: Allow
+      protocol: TCP
+      source:
+        selector: app == 'prometheus'
+      destination:
+        ports:
+          - 8888
   egress:
-    # COMPLETED: DNS allowed for internal logging/resolution
+    # COMPLETED: Internal DNS allowed
     - action: Allow
       protocol: UDP
       destination:
         ports:
           - 53
-    # TODO: Add egress rule for Alertmanager (Port 9090) to trigger notifications
-    # TODO: Add Egress rule for Prometheus metrics exporter
+    # TODO: Future update - Add egress to Alertmanager (9090)
     - action: Deny
 
 ---
@@ -118,8 +135,7 @@ spec:
   types:
     - Ingress
     - Egress
-  # COMPLETED: Global Catch-All Deny
-  # Ensures any pod without a specific policy is isolated by default
+  # COMPLETED: The "Master Lock" - Deny all traffic not explicitly allowed above
   ingress:
     - action: Deny
   egress:
