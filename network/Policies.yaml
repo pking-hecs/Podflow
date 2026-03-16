@@ -1,74 +1,126 @@
-# PodFlow baseline connectivity rules
-# Scope:
-# - api-gateway (frontend tier)
-# - user-service (backend tier)
-#
-# Future extensions:
-# - monitoring access (Prometheus)
-# - honeypot isolation
-# - cluster-wide default deny
+# ===============================================================
+# QUICK SUMMARY:
+# 1. Gateway (Port 8080): Open to outside; can only talk to Backend.
+# 2. Backend (Port 5000): Private; only accepts traffic from Gateway.
+# 3. Honeypot (2222/8888): Isolated trap; open to all for detection.
+# 4. Global Deny: All other traffic is blocked by default.
+# ===============================================================
+
+# ===============================================================
+# PODFLOW NETWORK SECURITY ARCHITECTURE
+# Purpose: Zero-Trust segmentation for Gateway, Backend, and Traps
+# ===============================================================
 
 apiVersion: projectcalico.org/v3
 kind: NetworkPolicy
 metadata:
-  name: gateway-access
+  name: gateway-shield
   namespace: podflow
 spec:
   selector: podflow.tier == 'frontend'
   types:
     - Ingress
     - Egress
-
   ingress:
-    # Public entry point for the API gateway
+    # COMPLETED: Exposed Port 8080 for external API traffic
     - action: Allow
       protocol: TCP
       destination:
         ports:
           - 8080
-
   egress:
-    # Allow calls from gateway to backend tier
+    # COMPLETED: Secured link to Backend on Port 5000 (matches current app.js)
     - action: Allow
       protocol: TCP
       destination:
         selector: podflow.tier == 'backend'
-
-    # Required for service discovery
+        ports:
+          - 5000
+    # COMPLETED: Enabled UDP/53 for internal K8s service discovery
     - action: Allow
       protocol: UDP
       destination:
         ports:
           - 53
+    # TODO: Add egress rule for external OAuth/Auth providers if required later
 
 ---
 
 apiVersion: projectcalico.org/v3
 kind: NetworkPolicy
 metadata:
-  name: backend-restricted-access
+  name: app-data-protection
   namespace: podflow
 spec:
   selector: podflow.tier == 'backend'
   types:
     - Ingress
     - Egress
-
   ingress:
-    # Only gateway tier can reach backend services
+    # COMPLETED: Restricted access to only allow the Frontend tier
     - action: Allow
       protocol: TCP
       source:
         selector: podflow.tier == 'frontend'
-
+      destination:
+        ports:
+          - 5000
+    # TODO: Add Ingress rule for Prometheus scraping (Port 5000) once monitoring is deployed
   egress:
-    # DNS access for backend pods
+    # COMPLETED: Locked down backend; only DNS is permitted
     - action: Allow
       protocol: UDP
       destination:
         ports:
           - 53
+    - action: Deny
 
-    # Default deny for backend egress
-    # (extend above this rule when new components are introduced)
+---
+
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: intrusion-trap-isolation
+  namespace: podflow
+spec:
+  selector: podflow.service == 'honeypot'
+  types:
+    - Ingress
+    - Egress
+  ingress:
+    # COMPLETED: Mapped traps for Port 2222 (SSH) and Port 8888 (HTTP Admin)
+    # This allows the honeypot.py script to log all unauthorized attempts
+    - action: Allow
+      protocol: TCP
+      destination:
+        ports:
+          - 2222
+          - 8888
+  egress:
+    # COMPLETED: DNS allowed for internal logging/resolution
+    - action: Allow
+      protocol: UDP
+      destination:
+        ports:
+          - 53
+    # TODO: Add egress rule for Alertmanager (Port 9090) to trigger notifications
+    # TODO: Add Egress rule for Prometheus metrics exporter
+    - action: Deny
+
+---
+
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: default-security-lockout
+spec:
+  order: 2000
+  types:
+    - Ingress
+    - Egress
+  # COMPLETED: Global Catch-All Deny
+  # Ensures any pod without a specific policy is isolated by default
+  ingress:
+    - action: Deny
+  egress:
     - action: Deny
