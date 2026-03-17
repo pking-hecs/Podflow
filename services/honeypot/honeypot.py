@@ -43,7 +43,7 @@ def fake_admin():
 
 @app.route('/metrics')
 def metrics():
-    return generate_latest()
+    return Response(generate_latest(), mimetype='text/plain; version=0.0.4; charset=utf-8')
 
 @app.route('/health')
 def health():

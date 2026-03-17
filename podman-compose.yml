@@ -33,6 +33,7 @@ services:
       - "9090:9090"
     networks:
       - service_net
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana
@@ -44,6 +45,21 @@ services:
       - prometheus
     networks:
       - service_net
+
+  honeypot:
+    build: ./services/honeypot
+    networks:
+      - service_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      restart_policy:
+        condition: on-failure
 
 
 networks:
