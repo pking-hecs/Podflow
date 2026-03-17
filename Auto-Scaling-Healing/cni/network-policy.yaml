@@ -1,0 +1,11 @@
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: default-deny
+spec:
+  selector: all()
+  types:
+  - Ingress
+  - Egress
+  # By leaving ingress/egress empty, we deny EVERYTHING by default.
+  # We will then add specific 'Allow' rules for our API.

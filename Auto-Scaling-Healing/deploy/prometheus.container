@@ -1,0 +1,14 @@
+[Container]
+Image=docker.io/prom/prometheus:latest
+ContainerName=podflow-prometheus
+# Map your config file so Prometheus knows to scrape your Python script
+Volume=%h/Desktop/Podflow-Project/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+PublishPort=9090:9090
+Network=podflow-net
+
+[Service]
+TimeoutStartSec=300
+Restart=always
+
+[Install]
+WantedBy=default.target
