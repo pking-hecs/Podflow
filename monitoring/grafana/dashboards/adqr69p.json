@@ -556,7 +556,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "honeypot_http_requests_total",
+          "expr": "honeypot_suspicious_requests_total",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -650,7 +650,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "rate(honeypot_http_requests_total[1m])",
+          "expr": "rate(honeypot_suspicious_requests_total[1m])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -744,7 +744,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum by (method) (rate(honeypot_http_requests_total[1m]))",
+          "expr": "sum by (method) (rate(honeypot_suspicious_requests_total[1m]))",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -768,6 +768,6 @@
   "timezone": "browser",
   "title": "System",
   "uid": "adqr69p",
-  "version": 16,
+  "version": 1,
   "weekStart": ""
 }
