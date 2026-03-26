@@ -24,4 +24,9 @@ scrape_configs:
       - targets: ['honeypot:8888']
     metrics_path: /metrics
 
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:5000']
+    metrics_path: /metrics
+
 
