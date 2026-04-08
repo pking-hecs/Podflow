@@ -1,8 +1,0 @@
-global:
-  scrape_interval: 5s
-
-scrape_configs:
-  - job_name: 'podflow-orchestrator'
-    static_configs:
-      # Point this to your host IP where the Python script is running
-      - targets: ['localhost:8000']
